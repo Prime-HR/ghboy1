@@ -1,4 +1,7 @@
+'use client';
+
 import Link from 'next/link';
+import { useEffect, useState } from 'react';
 
 const links = [
   { href: '/', label: 'Dashboard', icon: '⌂' },
@@ -11,6 +14,22 @@ const links = [
 ];
 
 export default function Navigation() {
+  const [business, setBusiness] = useState<{ name: string; currency: string; location: string | null } | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    fetch('/api/business')
+      .then((response) => (response.ok ? response.json() : null))
+      .then((data) => {
+        if (active && data?.business) setBusiness(data.business);
+      })
+      .catch(() => undefined);
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
   return (
     <aside className="hidden min-h-screen w-64 shrink-0 border-r bg-white lg:block">
       <div className="sticky top-0 flex min-h-screen flex-col p-5">
@@ -28,8 +47,10 @@ export default function Navigation() {
         </nav>
         <div className="mt-auto rounded-2xl bg-slate-50 p-4">
           <p className="text-xs font-semibold text-slate-500">BUSINESS</p>
-          <p className="mt-1 font-bold">My Fashion Store</p>
-          <p className="mt-1 text-xs text-slate-500">GHS · Ghana</p>
+          <p className="mt-1 font-bold">{business?.name ?? 'My Fashion Store'}</p>
+          <p className="mt-1 text-xs text-slate-500">
+            {business?.currency ?? 'GHS'} · {business?.location || 'Ghana'}
+          </p>
         </div>
       </div>
     </aside>
