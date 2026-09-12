@@ -7,6 +7,7 @@ const links = [
   { href: '/customers', label: 'Customers', icon: '♙' },
   { href: '/expenses', label: 'Expenses', icon: '₵' },
   { href: '/reports', label: 'Reports', icon: '▥' },
+  { href: '/settings', label: 'Settings', icon: '⚙' },
 ];
 
 export default function Navigation() {
