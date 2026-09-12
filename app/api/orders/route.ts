@@ -90,65 +90,71 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Delivery fee and payment received must be 0 or more." }, { status: 400 });
     }
 
-    const result = await prisma.$transaction(async (tx) => {
-      const [customer, product] = await Promise.all([
-        tx.customer.findFirst({ where: { id: customerId, businessId } }),
-        tx.product.findFirst({ where: { id: productId, businessId, status: "ACTIVE" } }),
-      ]);
+    // Neon/PostgreSQL can briefly take longer to acquire a transaction connection,
+    // especially after the database has been idle. Give the transaction a sensible
+    // acquisition and execution window while keeping the whole sale atomic.
+    const result = await prisma.$transaction(
+      async (tx) => {
+        const [customer, product] = await Promise.all([
+          tx.customer.findFirst({ where: { id: customerId, businessId } }),
+          tx.product.findFirst({ where: { id: productId, businessId, status: "ACTIVE" } }),
+        ]);
 
-      if (!customer) throw new Error("CUSTOMER_NOT_FOUND");
-      if (!product) throw new Error("PRODUCT_NOT_FOUND");
-      if (product.stockQuantity < quantity) throw new Error("INSUFFICIENT_STOCK");
+        if (!customer) throw new Error("CUSTOMER_NOT_FOUND");
+        if (!product) throw new Error("PRODUCT_NOT_FOUND");
+        if (product.stockQuantity < quantity) throw new Error("INSUFFICIENT_STOCK");
 
-      const subtotal = Number(product.sellingPrice) * quantity;
-      const total = subtotal + deliveryFee;
-      if (paymentReceived > total) throw new Error("PAYMENT_TOO_HIGH");
+        const subtotal = Number(product.sellingPrice) * quantity;
+        const total = subtotal + deliveryFee;
+        if (paymentReceived > total) throw new Error("PAYMENT_TOO_HIGH");
 
-      const paymentStatus = paymentReceived <= 0 ? "UNPAID" : paymentReceived >= total ? "PAID" : "PARTIALLY_PAID";
-      const orderNumber = `ORD-${Date.now().toString().slice(-8)}`;
+        const paymentStatus = paymentReceived <= 0 ? "UNPAID" : paymentReceived >= total ? "PAID" : "PARTIALLY_PAID";
+        const orderNumber = `ORD-${Date.now().toString().slice(-8)}`;
 
-      const stockUpdate = await tx.product.updateMany({
-        where: { id: product.id, businessId, stockQuantity: { gte: quantity } },
-        data: { stockQuantity: { decrement: quantity } },
-      });
-      if (stockUpdate.count !== 1) throw new Error("INSUFFICIENT_STOCK");
+        const stockUpdate = await tx.product.updateMany({
+          where: { id: product.id, businessId, stockQuantity: { gte: quantity } },
+          data: { stockQuantity: { decrement: quantity } },
+        });
+        if (stockUpdate.count !== 1) throw new Error("INSUFFICIENT_STOCK");
 
-      const order = await tx.order.create({
-        data: {
-          businessId,
-          customerId: customer.id,
-          orderNumber,
-          subtotal,
-          deliveryFee,
-          total,
-          paidAmount: paymentReceived,
-          paymentStatus,
-          status: "NEW",
-          deliveryStatus: "PENDING",
-          items: {
-            create: {
-              productId: product.id,
-              quantity,
-              unitPrice: product.sellingPrice,
-              unitCost: product.costPrice,
+        const order = await tx.order.create({
+          data: {
+            businessId,
+            customerId: customer.id,
+            orderNumber,
+            subtotal,
+            deliveryFee,
+            total,
+            paidAmount: paymentReceived,
+            paymentStatus,
+            status: "NEW",
+            deliveryStatus: "PENDING",
+            items: {
+              create: {
+                productId: product.id,
+                quantity,
+                unitPrice: product.sellingPrice,
+                unitCost: product.costPrice,
+              },
             },
+            payments: paymentReceived > 0 ? { create: { amount: paymentReceived, method: paymentMethod || null } } : undefined,
           },
-          payments: paymentReceived > 0 ? { create: { amount: paymentReceived, method: paymentMethod || null } } : undefined,
-        },
-        include: {
-          customer: true,
-          items: { include: { product: true } },
-          payments: { orderBy: { createdAt: "asc" } },
-        },
-      });
+          include: {
+            customer: true,
+            items: { include: { product: true } },
+            payments: { orderBy: { createdAt: "asc" } },
+          },
+        });
 
-      const currentOrders = await tx.order.count({ where: { businessId, customerId: customer.id } });
-      if (currentOrders === 1 && customer.type === "NEW") {
-        await tx.customer.update({ where: { id: customer.id }, data: { type: "RETURNING" } });
-      }
+        const currentOrders = await tx.order.count({ where: { businessId, customerId: customer.id } });
+        if (currentOrders === 1 && customer.type === "NEW") {
+          await tx.customer.update({ where: { id: customer.id }, data: { type: "RETURNING" } });
+        }
 
-      return order;
-    });
+        return order;
+      },
+      { maxWait: 15000, timeout: 30000 },
+    );
 
     return NextResponse.json(serializeOrder(result), { status: 201 });
   } catch (error: unknown) {
