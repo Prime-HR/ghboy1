@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 const links = [
@@ -14,6 +15,7 @@ const links = [
 ];
 
 export default function Navigation() {
+  const pathname = usePathname();
   const [business, setBusiness] = useState<{ name: string; currency: string; location: string | null } | null>(null);
 
   useEffect(() => {
@@ -37,17 +39,32 @@ export default function Navigation() {
           <p className="text-sm font-extrabold tracking-wide text-indigo-600">FASHION SELLER PRO</p>
           <p className="mt-1 text-xs text-slate-500">Ghana Edition</p>
         </Link>
-        <nav className="space-y-1">
-          {links.map((link) => (
-            <Link key={link.href} href={link.href} className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold text-slate-700 transition hover:bg-indigo-50 hover:text-indigo-700">
-              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-sm">{link.icon}</span>
-              {link.label}
-            </Link>
-          ))}
+        <nav className="space-y-1" aria-label="Main navigation">
+          {links.map((link) => {
+            const isActive = link.href === '/' ? pathname === '/' : pathname === link.href || pathname.startsWith(`${link.href}/`);
+
+            return (
+              <Link
+                key={link.href}
+                href={link.href}
+                aria-current={isActive ? 'page' : undefined}
+                className={`flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold transition ${
+                  isActive
+                    ? 'bg-indigo-50 text-indigo-700'
+                    : 'text-slate-700 hover:bg-indigo-50 hover:text-indigo-700'
+                }`}
+              >
+                <span className={`flex h-8 w-8 items-center justify-center rounded-lg text-sm ${isActive ? 'bg-white' : 'bg-slate-100'}`}>
+                  {link.icon}
+                </span>
+                {link.label}
+              </Link>
+            );
+          })}
         </nav>
         <div className="mt-auto rounded-2xl bg-slate-50 p-4">
           <p className="text-xs font-semibold text-slate-500">BUSINESS</p>
-          <p className="mt-1 font-bold">{business?.name ?? 'My Fashion Store'}</p>
+          <p className="mt-1 truncate font-bold">{business?.name ?? 'My Fashion Store'}</p>
           <p className="mt-1 text-xs text-slate-500">
             {business?.currency ?? 'GHS'} · {business?.location || 'Ghana'}
           </p>
