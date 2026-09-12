@@ -6,20 +6,31 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "postinstall": "prisma generate",
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate dev --schema database/schema.prisma",
+    "db:studio": "prisma studio --schema database/schema.prisma"
   },
   "dependencies": {
+    "@prisma/adapter-pg": "7.10.0",
+    "@prisma/client": "7.10.0",
+    "dotenv": "17.2.2",
     "next": "latest",
+    "pg": "8.16.3",
     "react": "latest",
     "react-dom": "latest"
   },
   "devDependencies": {
     "@types/node": "latest",
+    "@types/pg": "8.15.5",
     "@types/react": "latest",
     "@types/react-dom": "latest",
-    "typescript": "latest",
+    "prisma": "7.10.0",
     "tailwindcss": "latest",
     "@tailwindcss/postcss": "latest",
-    "postcss": "latest"
+    "postcss": "latest",
+    "tsx": "4.20.5",
+    "typescript": "latest"
   }
 }
