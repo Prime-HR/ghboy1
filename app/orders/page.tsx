@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from 'react';
 
 type Order = {
   id: string;
+  orderId: string;
   customerName: string;
   productName: string;
   quantity: number;
@@ -50,8 +51,8 @@ export default function OrdersPage() {
         </div>
         {error && <p className="mb-5 rounded-xl bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-700">{error}</p>}
         <div className="overflow-hidden rounded-2xl border bg-white shadow-sm">
-          <div className="overflow-x-auto"><table className="w-full min-w-[900px] text-left text-sm"><thead className="border-b bg-slate-50 text-slate-500"><tr>{['Order','Customer','Item','Qty','Total','Paid','Outstanding','Payment','Status'].map((h) => <th key={h} className="px-5 py-4 font-semibold">{h}</th>)}</tr></thead>
-          <tbody>{loading ? <tr><td colSpan={9} className="px-5 py-12 text-center text-slate-500">Loading orders...</td></tr> : orders.length === 0 ? <tr><td colSpan={9} className="px-5 py-12 text-center text-slate-500">No orders yet. Record your first sale.</td></tr> : orders.map((o) => <tr key={o.orderId ?? o.id} className="border-b last:border-0 hover:bg-slate-50"><td className="px-5 py-4 font-semibold">#{o.id}</td><td className="px-5 py-4">{o.customerName}</td><td className="px-5 py-4 text-slate-600">{o.productName}</td><td className="px-5 py-4">{o.quantity}</td><td className="px-5 py-4 font-semibold">{money(o.total)}</td><td className="px-5 py-4">{money(o.paymentReceived)}</td><td className="px-5 py-4 font-semibold">{money(o.outstanding)}</td><td className="px-5 py-4"><span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold">{o.paymentStatus}</span></td><td className="px-5 py-4"><span className="rounded-full bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-700">{o.status}</span></td></tr>)}</tbody></table></div>
+          <div className="overflow-x-auto"><table className="w-full min-w-[980px] text-left text-sm"><thead className="border-b bg-slate-50 text-slate-500"><tr>{['Order','Customer','Item','Qty','Total','Paid','Outstanding','Payment','Status',''].map((h) => <th key={h} className="px-5 py-4 font-semibold">{h}</th>)}</tr></thead>
+          <tbody>{loading ? <tr><td colSpan={10} className="px-5 py-12 text-center text-slate-500">Loading orders...</td></tr> : orders.length === 0 ? <tr><td colSpan={10} className="px-5 py-12 text-center text-slate-500">No orders yet. Record your first sale.</td></tr> : orders.map((o) => <tr key={o.orderId} className="border-b last:border-0 hover:bg-slate-50"><td className="px-5 py-4 font-semibold">#{o.id}</td><td className="px-5 py-4">{o.customerName}</td><td className="px-5 py-4 text-slate-600">{o.productName}</td><td className="px-5 py-4">{o.quantity}</td><td className="px-5 py-4 font-semibold">{money(o.total)}</td><td className="px-5 py-4">{money(o.paymentReceived)}</td><td className="px-5 py-4 font-semibold">{money(o.outstanding)}</td><td className="px-5 py-4"><span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold">{o.paymentStatus}</span></td><td className="px-5 py-4"><span className="rounded-full bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-700">{o.status}</span></td><td className="px-5 py-4"><Link href={`/orders/${o.orderId}`} className="font-semibold text-indigo-600 hover:text-indigo-800">View</Link></td></tr>)}</tbody></table></div>
         </div>
       </div>
     </main>
