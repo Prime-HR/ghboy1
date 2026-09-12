@@ -31,8 +31,8 @@ export default function Navigation() {
   }, []);
 
   return (
-    <aside className="hidden min-h-screen w-64 shrink-0 border-r bg-white lg:block">
-      <div className="sticky top-0 flex min-h-screen flex-col p-5">
+    <aside className="flex min-h-screen w-64 shrink-0 border-r bg-white">
+      <div className="sticky top-0 flex min-h-screen w-full flex-col p-5">
         <Link href="/" className="mb-8 block">
           <p className="text-sm font-extrabold tracking-wide text-indigo-600">FASHION SELLER PRO</p>
           <p className="mt-1 text-xs text-slate-500">Ghana Edition</p>
