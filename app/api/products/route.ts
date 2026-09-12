@@ -71,3 +71,29 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unable to create product." }, { status: 500 });
   }
 }
+
+export async function DELETE(request: Request) {
+  const businessId = await getBusinessId();
+  if (!businessId) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const { searchParams } = new URL(request.url);
+  const id = searchParams.get("id");
+  if (!id) {
+    return NextResponse.json({ error: "Product id is required." }, { status: 400 });
+  }
+
+  const product = await prisma.product.findFirst({ where: { id, businessId } });
+  if (!product) {
+    return NextResponse.json({ error: "Product not found." }, { status: 404 });
+  }
+
+  try {
+    await prisma.product.delete({ where: { id: product.id } });
+    return new NextResponse(null, { status: 204 });
+  } catch (error: unknown) {
+    console.error("Product deletion failed", error);
+    return NextResponse.json({ error: "This product cannot be deleted because it is used by an order." }, { status: 409 });
+  }
+}
